@@ -126,6 +126,9 @@ XML;
     $proofKey = $xpath->query('/s:Envelope/s:Body/wst:RequestSecurityTokenResponseCollection/wst:RequestSecurityTokenResponse/wst:RequestedProofToken/wst:BinarySecret', $doc);
     $samlAssignID = $xpath->query('/s:Envelope/s:Body/trust:RequestSecurityTokenResponseCollection/trust:RequestSecurityTokenResponse/trust:RequestedAttachedReference/o:SecurityTokenReference/o:KeyIdentifier', $doc);
 
+    if ($proofKey->length === 0) {
+      throw new Error('Sts sunucusundan kimlik doğrulanamadı.');
+    }
     $proofKey = base64_decode($proofKey->item(0)->textContent);
     $token = $dom->saveXML($token->item(0)->firstChild);
     $samlAssignID = $samlAssignID->item(0)->textContent;
