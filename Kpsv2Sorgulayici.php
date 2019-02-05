@@ -16,16 +16,22 @@ class Kpsv2Sorgulayici {
   // -------------------------------------------------------------------------------------------
   // YARDIMCI METODLAR
   // -------------------------------------------------------------------------------------------
-  public function __construct($adresSorgu, $adresSts, $kullanici, $sifre) {
-    $this->adresSorgu = $adresSorgu;
-    $this->adresSts = $adresSts;
-    $this->kullanici = $kullanici;
-    $this->sifre = $sifre;
+
+  public function __construct($adresSorgu, $adresSts, $kullanici, $sifre) 
+  {
+      $this->adresSorgu = $adresSorgu;
+      $this->adresSts   = $adresSts;
+      $this->kullanici  = $kullanici;
+      $this->sifre      = $sifre;
   }
-  private function getZamanDamgasi($aralik = 0) {
+
+  private function getZamanDamgasi($aralik = 0) 
+  {
       return gmdate("Y-m-d\TH:i:s\Z", time() + $aralik);
   }
-  private function getXmlZamanDamgasiBasligi() {
+
+  private function getXmlZamanDamgasiBasligi() 
+  {
     $zdBasla = $this->getZamanDamgasi();
     $zdBitis = $this->getZamanDamgasi(300);
     return <<<XML
@@ -35,7 +41,9 @@ class Kpsv2Sorgulayici {
 </wsu:Timestamp>
 XML;
   }
-  private function getXmlSecurityBasligi($icerik1, $icerik2, $adres, $metod) {
+
+  private function getXmlSecurityBasligi($icerik1, $icerik2, $adres, $metod) 
+  {
     return <<<XML
 <wsse:Security>
   $icerik1
@@ -45,7 +53,9 @@ XML;
 <wsa:Action>$metod</wsa:Action>
 XML;
   }
-  private function getXmlSoapTam($baslik, $govde) {
+
+  private function getXmlSoapTam($baslik, $govde) 
+  {
     return <<<XML
 <s:Envelope
   xmlns:s="http://www.w3.org/2003/05/soap-envelope"
@@ -61,26 +71,29 @@ XML;
 </s:Envelope>
 XML;
   }
-  private function soapSorguYap($adres, $xml) {
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($ch, CURLOPT_URL, $adres);
-    curl_setopt($ch, CURLOPT_POST, 1);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $xml);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-      'Content-Type: application/soap+xml; charset=utf-8',
-    ));
-    $sonuc = curl_exec($ch);
-    curl_close($ch);
-    return $sonuc;
+
+  private function soapSorguYap($adres, $xml) 
+  {
+      $ch = curl_init();
+      curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+      curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+      curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+      curl_setopt($ch, CURLOPT_URL, $adres);
+      curl_setopt($ch, CURLOPT_POST, 1);
+      curl_setopt($ch, CURLOPT_POSTFIELDS, $xml);
+      curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+        'Content-Type: application/soap+xml; charset=utf-8',
+      ));
+      $sonuc = curl_exec($ch);
+      curl_close($ch);
+      return $sonuc;
   }
 
   // -------------------------------------------------------------------------------------------
   // ASIL SORGU METODU
   // -------------------------------------------------------------------------------------------
-  public function calistir($anaMetod, $anaXmlGovde) {
+  public function calistir($anaMetod, $anaXmlGovde) 
+  {
     // Sts den kullanıcı şifre ile authentice olup token alma aşması
     // -------------------------------------------------------------------------------------------
     $xmlZd = $this->getXmlZamanDamgasiBasligi();
@@ -108,37 +121,39 @@ XML;
 </wst:RequestSecurityToken>
 XML;
 
-    $xmlSorgu = $this->getXmlSoapTam($xmlBaslik, $xmlGovde);
-    $sonuc = $this->soapSorguYap($this->adresSts, $xmlSorgu);
-
+    $xmlSorgu     = $this->getXmlSoapTam($xmlBaslik, $xmlGovde);
+    $sonuc        = $this->soapSorguYap($this->adresSts, $xmlSorgu);
+    
     // Alınan tokenı imzalama aşaması
     // -------------------------------------------------------------------------------------------
-    $dom = new DOMDocument();
+    $dom          = new DOMDocument();
     $dom->loadXML($sonuc);
-    $doc = $dom->documentElement;
-    $xpath = new DOMXpath($dom);
+    $doc          = $dom->documentElement;
+    $xpath        = new DOMXpath($dom);
     $xpath->registerNamespace('s', 'http://www.w3.org/2003/05/soap-envelope');
     $xpath->registerNamespace('wst', 'http://docs.oasis-open.org/ws-sx/ws-trust/200512');
     $xpath->registerNamespace('wsse', 'http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd');
     $xpath->registerNamespace('trust', 'http://docs.oasis-open.org/ws-sx/ws-trust/200512');
     $xpath->registerNamespace('o', 'http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd');
-    $token = $xpath->query('/s:Envelope/s:Body/wst:RequestSecurityTokenResponseCollection/wst:RequestSecurityTokenResponse/wst:RequestedSecurityToken', $doc);
-    $proofKey = $xpath->query('/s:Envelope/s:Body/wst:RequestSecurityTokenResponseCollection/wst:RequestSecurityTokenResponse/wst:RequestedProofToken/wst:BinarySecret', $doc);
+    $token        = $xpath->query('/s:Envelope/s:Body/wst:RequestSecurityTokenResponseCollection/wst:RequestSecurityTokenResponse/wst:RequestedSecurityToken', $doc);
+    $proofKey     = $xpath->query('/s:Envelope/s:Body/wst:RequestSecurityTokenResponseCollection/wst:RequestSecurityTokenResponse/wst:RequestedProofToken/wst:BinarySecret', $doc);
     $samlAssignID = $xpath->query('/s:Envelope/s:Body/trust:RequestSecurityTokenResponseCollection/trust:RequestSecurityTokenResponse/trust:RequestedAttachedReference/o:SecurityTokenReference/o:KeyIdentifier', $doc);
 
     if ($proofKey->length === 0) {
       throw new Error('Sts sunucusundan kimlik doğrulanamadı.');
     }
-    $proofKey = base64_decode($proofKey->item(0)->textContent);
-    $token = $dom->saveXML($token->item(0)->firstChild);
+
+    $proofKey     = base64_decode($proofKey->item(0)->textContent);
+    $token        = $dom->saveXML($token->item(0)->firstChild);
     $samlAssignID = $samlAssignID->item(0)->textContent;
-
-    $xmlZd = $this->getXmlZamanDamgasiBasligi();
-
-    $dom = new DOMDocument();
+    
+    $xmlZd        = $this->getXmlZamanDamgasiBasligi();
+    
+    $dom          = new DOMDocument();
     $dom->loadXML($xmlZd);
     $canonicalXML = $dom->documentElement->C14N(TRUE, FALSE);
-    $digestValue = base64_encode(hash('sha1', $canonicalXML, TRUE));
+    $digestValue  = base64_encode(hash('sha1', $canonicalXML, TRUE));
+    
     $signedInfo = <<<XML
 <dsig:SignedInfo xmlns:dsig="http://www.w3.org/2000/09/xmldsig#">
   <dsig:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
@@ -150,9 +165,9 @@ XML;
   </dsig:Reference>
 </dsig:SignedInfo>
 XML;
-    $dom = new DOMDocument();
+    $dom            = new DOMDocument();
     $dom->loadXML($signedInfo);
-    $canonicalXml = $dom->documentElement->C14N(TRUE, FALSE);
+    $canonicalXml   = $dom->documentElement->C14N(TRUE, FALSE);
     $signatureValue = base64_encode(hash_hmac('sha1', $canonicalXml , $proofKey, TRUE));
     $tokenImza = <<<XML
 <dsig:Signature>
@@ -169,7 +184,7 @@ XML;
     // Token kullanarak asıl sorguyu yapma aşaması
     // -------------------------------------------------------------------------------------------
     $xmlBaslik = $this->getXmlSecurityBasligi($xmlZd, $token . $tokenImza, $this->adresSorgu, $anaMetod);
-    $xmlSorgu = $this->getXmlSoapTam($xmlBaslik, $anaXmlGovde);
+    $xmlSorgu  = $this->getXmlSoapTam($xmlBaslik, $anaXmlGovde);
     return $this->soapSorguYap($this->adresSorgu, $xmlSorgu);
   }
 }
